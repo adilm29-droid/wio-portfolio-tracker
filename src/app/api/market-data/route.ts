@@ -1,18 +1,21 @@
 import { NextResponse } from 'next/server'
 
-// yahoo-finance2 is a CommonJS module — import dynamically to avoid ESM issues
-async function getYahooFinance() {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const yf = require('yahoo-finance2').default ?? require('yahoo-finance2')
-  return yf
+let _yf: any = null
+async function getYF() {
+  if (!_yf) {
+    const mod = await import('yahoo-finance2')
+    const YF = mod.default
+    _yf = new YF({ suppressNotices: ['yahooSurvey'] })
+  }
+  return _yf
 }
 
 export async function GET() {
   try {
-    const yahooFinance = await getYahooFinance()
+    const yahooFinance = await getYF()
     const symbols = ['^GSPC', '^IXIC', '^VIX', 'CL=F', 'GC=F', 'BTC-USD']
     const quotes = await Promise.allSettled(
-      symbols.map((s: string) => yahooFinance.quote(s))
+      symbols.map((s: string) => yahooFinance.quote(s, {}, { validateResult: false }))
     )
 
     const result: Record<string, {
