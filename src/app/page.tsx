@@ -26,6 +26,7 @@ export default function DashboardPage() {
   const [earnings, setEarnings] = useState<EarningsCalendar[]>([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
+  const [pricesStale, setPricesStale] = useState(false)
 
   async function load() {
     const [{ data: h }, { data: wp }, { data: wph }, { data: bt }, { data: ec }] = await Promise.all([
@@ -35,14 +36,34 @@ export default function DashboardPage() {
       supabase.from('bucket_targets').select('*').order('sort_order'),
       supabase.from('earnings_calendar').select('*').order('earnings_date'),
     ])
-    setHoldings(h || [])
+    const loadedHoldings = h || []
+    setHoldings(loadedHoldings)
     setWps((wp || []).map(w => ({ ...w, holdings: (wph || []).filter(x => x.portfolio_id === w.id) })))
     setBucketTargets(bt || [])
     setEarnings(ec || [])
+    // Detect stale prices: any non-crypto active holding has price 0 or no price_updated_at in last hour
+    const now = Date.now()
+    const stale = loadedHoldings.some((holding: any) => {
+      if (!holding.is_active) return false
+      if (holding.current_price === 0 || holding.current_price == null) return true
+      if (!holding.price_updated_at) return true
+      return now - new Date(holding.price_updated_at).getTime() > 60 * 60 * 1000
+    })
+    setPricesStale(stale)
     setLoading(false)
+    return stale
   }
 
-  useEffect(() => { load() }, [])
+  useEffect(() => {
+    load().then(stale => {
+      if (stale) {
+        setRefreshing(true)
+        fetch('/api/refresh-prices', { method: 'POST' })
+          .then(() => load())
+          .finally(() => setRefreshing(false))
+      }
+    })
+  }, [])
 
   async function handleRefresh() {
     setRefreshing(true)
@@ -50,6 +71,8 @@ export default function DashboardPage() {
     await load()
     setRefreshing(false)
   }
+
+  const hasLivePrices = !pricesStale && !refreshing
 
   const wealthTotal = wps.reduce((s, p) => s + p.total_value, 0)
   const directTotal = holdings.reduce((s, h) => s + h.shares * h.current_price, 0)
@@ -117,8 +140,17 @@ export default function DashboardPage() {
         {/* P/L */}
         <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-4">
           <p className="text-xs text-zinc-500 font-medium uppercase tracking-wide">Total P/L</p>
-          <p className={cn('text-2xl font-bold mt-1', getPlColor(totalPL))}>{totalPL >= 0 ? '+' : ''}{fmtCurrency(totalPL)}</p>
-          <span className={cn('text-xs px-2 py-0.5 rounded mt-1 inline-block', getPlBgColor(totalPLPct))}>{fmtPercent(totalPLPct)}</span>
+          {pricesStale ? (
+            <>
+              <p className="text-sm font-medium text-zinc-400 mt-1">{refreshing ? 'Loading prices...' : 'Prices not loaded'}</p>
+              <span className="text-xs text-zinc-500 mt-1 inline-block">{refreshing ? 'Fetching live data...' : 'Click Refresh Prices'}</span>
+            </>
+          ) : (
+            <>
+              <p className={cn('text-2xl font-bold mt-1', getPlColor(totalPL))}>{totalPL >= 0 ? '+' : ''}{fmtCurrency(totalPL)}</p>
+              <span className={cn('text-xs px-2 py-0.5 rounded mt-1 inline-block', getPlBgColor(totalPLPct))}>{fmtPercent(totalPLPct)}</span>
+            </>
+          )}
         </div>
 
         {/* Cash */}
