@@ -6,7 +6,7 @@ import { computeHoldingMetrics, fmtCurrency, fmtPercent, fmt, getPlColor, getPlB
 import { evaluateRules, computeBucketAllocations } from '@/lib/rules-engine'
 import type { Holding, WealthPortfolio, WealthPortfolioHolding, BucketTarget, EarningsCalendar, Alert, BucketAllocation, HoldingWithMetrics } from '@/lib/types'
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts'
-import { TrendingUp, TrendingDown, AlertTriangle, CheckCircle, RefreshCw, Calendar, Newspaper, DollarSign, Activity, Shield } from 'lucide-react'
+import { TrendingUp, TrendingDown, AlertTriangle, CheckCircle, RefreshCw, Calendar, Newspaper, DollarSign, Activity, Shield, Zap } from 'lucide-react'
 import { differenceInDays, format, parseISO } from 'date-fns'
 
 const SECTOR_COLORS: Record<string, string> = {
@@ -116,6 +116,25 @@ export default function DashboardPage() {
     )
   }
 
+  // Pre-earnings data for Apr 20-24 week
+  const earningsWeek = [
+    { ticker: 'UNH', date: 'Mon Apr 20', timing: 'BMO', shares: 4.94, action: 'HOLD through earnings', impact: 'HIGH' as const },
+    { ticker: 'TSLA', date: 'Tue Apr 21', timing: 'AMC', shares: 3.21, action: 'HOLD through earnings', impact: 'MED' as const },
+    { ticker: 'MSFT', date: 'Wed Apr 22', timing: 'AMC', shares: 1.45, action: 'HOLD through earnings', impact: 'MED' as const },
+    { ticker: 'GOOGL', date: 'Wed Apr 22', timing: 'AMC', shares: null, action: 'Held via FATMAA portfolio', impact: 'MED' as const },
+    { ticker: 'META', date: 'Thu Apr 23', timing: 'AMC', shares: 0.55, action: 'HOLD through earnings', impact: 'LOW' as const },
+    { ticker: 'AMZN', date: 'Fri Apr 24', timing: 'AMC', shares: 7.35, action: 'HOLD through earnings', impact: 'MED' as const },
+  ]
+
+  // Today's Action: 10-framework institutional analysis on updated portfolio
+  const todayActions = [
+    { icon: '⚠️', text: 'UNH reports Monday BMO — HIGH IMPACT, hold 4.94 shares through earnings' },
+    { icon: '✅', text: 'HOLD TSLA, MSFT, GOOGL, META, AMZN through this weeks earnings' },
+    { icon: '✅', text: 'Speculative cleanup complete — RR, DUOL, DEFT exits reduce drag' },
+    { icon: '✅', text: 'SPUS rotation absorbs $1,696 — core ETF allocation now above 50%' },
+    { icon: '✅', text: 'AMD trimmed to 4.33 shares — sector overweight reduced' },
+  ]
+
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex items-center justify-between flex-wrap gap-3">
@@ -126,6 +145,58 @@ export default function DashboardPage() {
         <button onClick={handleRefresh} disabled={refreshing} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-zinc-800 text-zinc-300 hover:bg-zinc-700 text-sm disabled:opacity-50 transition-colors">
           <RefreshCw size={14} className={refreshing ? 'animate-spin' : ''} /> Refresh Prices
         </button>
+      </div>
+
+      {/* TODAY'S ACTION card — top-level institutional framework output */}
+      <div className="bg-zinc-900 rounded-xl border border-blue-800/50 p-5">
+        <div className="flex items-center gap-2 mb-3">
+          <Zap size={18} className="text-blue-400" />
+          <h2 className="text-lg font-bold text-white">TODAY&apos;S ACTION</h2>
+          <span className="text-xs text-zinc-500 ml-1">— 10-framework analysis • Apr 18, 2026</span>
+        </div>
+        <div className="space-y-1.5">
+          {todayActions.map((a, i) => (
+            <div key={i} className="flex items-start gap-2 text-sm">
+              <span className="shrink-0 w-5 text-center">{a.icon}</span>
+              <span className="text-zinc-300">{a.text}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Pre-Earnings Briefing — Apr 20-24 */}
+      <div className="bg-zinc-900 rounded-xl border border-amber-800/40 overflow-hidden">
+        <div className="px-5 py-4 border-b border-zinc-800 flex items-center gap-2">
+          <Calendar size={18} className="text-amber-400" />
+          <h2 className="text-lg font-bold text-white">Pre-Earnings Briefing</h2>
+          <span className="text-xs text-zinc-500">Week of Apr 20–24, 2026</span>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 divide-x divide-y divide-zinc-800/60">
+          {earningsWeek.map(e => {
+            const h = holdings.find(x => x.ticker === e.ticker)
+            const price = h?.current_price ?? 0
+            const value = e.shares != null ? e.shares * price : null
+            const impactColor = e.impact === 'HIGH' ? 'text-red-400 border-red-800/50' : e.impact === 'MED' ? 'text-amber-400 border-amber-800/40' : 'text-zinc-400 border-zinc-800'
+            return (
+              <div key={e.ticker} className="p-4 hover:bg-zinc-800/30 transition-colors">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className={cn('text-base font-bold', e.impact === 'HIGH' ? 'text-red-400' : e.impact === 'MED' ? 'text-amber-300' : 'text-zinc-300')}>{e.ticker}</span>
+                  {e.impact === 'HIGH' && <span className="text-[10px] px-1.5 py-0.5 bg-red-400/20 text-red-400 rounded font-bold">HIGH IMPACT</span>}
+                </div>
+                <p className="text-xs text-zinc-500 mb-0.5">{e.date} • {e.timing}</p>
+                {e.shares != null ? (
+                  <>
+                    <p className="text-xs text-zinc-400">{e.shares} shares</p>
+                    <p className="text-xs font-medium text-white">{price > 0 ? fmtCurrency(value ?? 0) : '—'}</p>
+                  </>
+                ) : (
+                  <p className="text-xs text-zinc-500 italic">Via portfolio</p>
+                )}
+                <p className="text-xs text-blue-400 mt-1.5 font-medium">{e.action}</p>
+              </div>
+            )
+          })}
+        </div>
       </div>
 
       {/* Row 1: 5 metric cards */}
