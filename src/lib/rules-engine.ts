@@ -149,8 +149,13 @@ export function computeBucketAllocations(
     bucketMap[h.bucket] = (bucketMap[h.bucket] || 0) + h.shares * h.current_price
   })
 
+  // Autopilot wealth portfolios are Core ETF-style diversified funds —
+  // include their value in CORE_ETF numerator so the bucket isn't understated.
+  const coreEtfBoost = wealthTotal
+
   return bucketTargets.map(bt => {
-    const actual_value = bucketMap[bt.bucket] || 0
+    const rawValue = bucketMap[bt.bucket] || 0
+    const actual_value = bt.bucket === 'CORE_ETF' ? rawValue + coreEtfBoost : rawValue
     const actual_percent = (actual_value / totalValue) * 100
     const midTarget = (bt.target_min + bt.target_max) / 2
     const drift = actual_percent - midTarget

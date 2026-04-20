@@ -27,6 +27,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [pricesStale, setPricesStale] = useState(false)
+  const [cashBannerDismissed, setCashBannerDismissed] = useState(false)
 
   async function load() {
     const [{ data: h }, { data: wp }, { data: wph }, { data: bt }, { data: ec }] = await Promise.all([
@@ -137,6 +138,14 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6 animate-fade-in">
+      {/* Cash buffer warning banner — dismissible, session only */}
+      {!cashBannerDismissed && cashPct < 5 && (
+        <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl bg-amber-500/10 border border-amber-500/40 text-amber-300">
+          <span className="text-sm font-medium">⚠️ No cash buffer — park AED 10,000 on next salary as dry powder</span>
+          <button onClick={() => setCashBannerDismissed(true)} className="shrink-0 text-amber-400 hover:text-amber-200 text-lg leading-none">✕</button>
+        </div>
+      )}
+
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-bold text-white">Command Center</h1>
