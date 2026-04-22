@@ -8,6 +8,10 @@ import type { Holding, WealthPortfolio, WealthPortfolioHolding, BucketTarget, Ea
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts'
 import { TrendingUp, TrendingDown, AlertTriangle, CheckCircle, RefreshCw, Calendar, Newspaper, DollarSign, Activity, Shield, Zap } from 'lucide-react'
 import { differenceInDays, format, parseISO } from 'date-fns'
+import { fetchSBDashboard, fetchSBNews } from '@/lib/stocksbrain-fetch'
+import type { SBDashboard, SBNewsItem } from '@/lib/stocksbrain-fetch'
+import { TodaysActionCard } from '@/components/TodaysActionCard'
+import { NewsCard } from '@/components/NewsCard'
 
 const SECTOR_COLORS: Record<string, string> = {
   Technology: '#3b82f6', 'Consumer Discretionary': '#f59e0b', Healthcare: '#22c55e',
@@ -28,6 +32,9 @@ export default function DashboardPage() {
   const [refreshing, setRefreshing] = useState(false)
   const [pricesStale, setPricesStale] = useState(false)
   const [cashBannerDismissed, setCashBannerDismissed] = useState(false)
+  const [sbData, setSbData] = useState<SBDashboard | null>(null)
+  const [newsItems, setNewsItems] = useState<SBNewsItem[]>([])
+  const [newsLoading, setNewsLoading] = useState(true)
 
   async function load() {
     const [{ data: h }, { data: wp }, { data: wph }, { data: bt }, { data: ec }] = await Promise.all([
@@ -64,7 +71,19 @@ export default function DashboardPage() {
           .finally(() => setRefreshing(false))
       }
     })
+    // Fetch StocksBrain data in parallel
+    fetchSBDashboard().then(data => setSbData(data))
   }, [])
+
+  useEffect(() => {
+    if (!loading) {
+      const tickers = holdings.map(h => h.ticker)
+      fetchSBNews(tickers).then(items => {
+        setNewsItems(items)
+        setNewsLoading(false)
+      })
+    }
+  }, [loading, holdings])
 
   async function handleRefresh() {
     setRefreshing(true)
@@ -117,32 +136,23 @@ export default function DashboardPage() {
     )
   }
 
-  // Pre-earnings data for Apr 20-24 week
+  // Earnings week Apr 20-25 — UNH + TSLA already reported
   const earningsWeek = [
-    { ticker: 'UNH', date: 'Mon Apr 20', timing: 'BMO', shares: 4.94, action: 'HOLD through earnings', impact: 'HIGH' as const },
-    { ticker: 'TSLA', date: 'Tue Apr 21', timing: 'AMC', shares: 3.21, action: 'HOLD through earnings', impact: 'MED' as const },
-    { ticker: 'MSFT', date: 'Wed Apr 22', timing: 'AMC', shares: 1.45, action: 'HOLD through earnings', impact: 'MED' as const },
-    { ticker: 'GOOGL', date: 'Wed Apr 22', timing: 'AMC', shares: null, action: 'Held via FATMAA portfolio', impact: 'MED' as const },
-    { ticker: 'META', date: 'Thu Apr 23', timing: 'AMC', shares: 0.55, action: 'HOLD through earnings', impact: 'LOW' as const },
-    { ticker: 'AMZN', date: 'Fri Apr 24', timing: 'AMC', shares: 7.35, action: 'HOLD through earnings', impact: 'MED' as const },
-  ]
-
-  // Today's Action: 10-framework institutional analysis on updated portfolio
-  const todayActions = [
-    { icon: '⚠️', text: 'UNH reports Monday BMO — HIGH IMPACT, hold 4.94 shares through earnings' },
-    { icon: '✅', text: 'HOLD TSLA, MSFT, GOOGL, META, AMZN through this weeks earnings' },
-    { icon: '✅', text: 'Speculative cleanup complete — RR, DUOL, DEFT exits reduce drag' },
-    { icon: '✅', text: 'SPUS rotation absorbs $1,696 — core ETF allocation now above 50%' },
-    { icon: '✅', text: 'AMD trimmed to 4.33 shares — sector overweight reduced' },
+    { ticker: 'UNH',  date: 'Mon Apr 20', timing: 'BMO', shares: 4.94,  action: 'Reported', impact: 'HIGH' as const, reported: true },
+    { ticker: 'TSLA', date: 'Tue Apr 21', timing: 'AMC', shares: 3.21,  action: 'Reported', impact: 'MED'  as const, reported: true },
+    { ticker: 'MSFT', date: 'Wed Apr 23', timing: 'AMC', shares: 1.45,  action: 'HOLD through earnings', impact: 'MED' as const, reported: false },
+    { ticker: 'GOOGL',date: 'Wed Apr 23', timing: 'AMC', shares: null,  action: 'Held via FATMAA portfolio', impact: 'MED' as const, reported: false },
+    { ticker: 'META', date: 'Thu Apr 24', timing: 'AMC', shares: 0.55,  action: 'HOLD through earnings', impact: 'LOW' as const, reported: false },
+    { ticker: 'AMZN', date: 'Fri Apr 25', timing: 'AMC', shares: 7.35,  action: 'HOLD through earnings', impact: 'MED' as const, reported: false },
   ]
 
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Cash buffer warning banner — dismissible, session only */}
-      {!cashBannerDismissed && cashPct < 5 && (
-        <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl bg-amber-500/10 border border-amber-500/40 text-amber-300">
-          <span className="text-sm font-medium">⚠️ No cash buffer — park AED 10,000 on next salary as dry powder</span>
-          <button onClick={() => setCashBannerDismissed(true)} className="shrink-0 text-amber-400 hover:text-amber-200 text-lg leading-none">✕</button>
+      {!cashBannerDismissed && cashVal < 1000 && (
+        <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/40 text-red-300">
+          <span className="text-sm font-medium">⚠️ No cash buffer ({fmtCurrency(cashVal)}) — park $1,500 on next salary as dry powder</span>
+          <button onClick={() => setCashBannerDismissed(true)} className="shrink-0 text-red-400 hover:text-red-200 text-lg leading-none">✕</button>
         </div>
       )}
 
@@ -156,41 +166,33 @@ export default function DashboardPage() {
         </button>
       </div>
 
-      {/* TODAY'S ACTION card — top-level institutional framework output */}
-      <div className="bg-zinc-900 rounded-xl border border-blue-800/50 p-5">
-        <div className="flex items-center gap-2 mb-3">
-          <Zap size={18} className="text-blue-400" />
-          <h2 className="text-lg font-bold text-white">TODAY&apos;S ACTION</h2>
-          <span className="text-xs text-zinc-500 ml-1">— 10-framework analysis • Apr 18, 2026</span>
-        </div>
-        <div className="space-y-1.5">
-          {todayActions.map((a, i) => (
-            <div key={i} className="flex items-start gap-2 text-sm">
-              <span className="shrink-0 w-5 text-center">{a.icon}</span>
-              <span className="text-zinc-300">{a.text}</span>
-            </div>
-          ))}
-        </div>
+      {/* Earnings week live banner */}
+      <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-sm font-medium">
+        <span>⏸</span>
+        <span>Earnings week live — MSFT &amp; GOOGL (Apr 23), META (Apr 24), AMZN (Apr 25) — no new trades until Mon Apr 28</span>
       </div>
 
-      {/* Pre-Earnings Briefing — Apr 20-24 */}
+      {/* TODAY'S ACTION card — powered by StocksBrain */}
+      <TodaysActionCard sbData={sbData} earnings={earnings} />
+
+      {/* Pre-Earnings Briefing — Apr 20-25 */}
       <div className="bg-zinc-900 rounded-xl border border-amber-800/40 overflow-hidden">
         <div className="px-5 py-4 border-b border-zinc-800 flex items-center gap-2">
           <Calendar size={18} className="text-amber-400" />
           <h2 className="text-lg font-bold text-white">Pre-Earnings Briefing</h2>
-          <span className="text-xs text-zinc-500">Week of Apr 20–24, 2026</span>
+          <span className="text-xs text-zinc-500">Week of Apr 20–25, 2026</span>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 divide-x divide-y divide-zinc-800/60">
           {earningsWeek.map(e => {
             const h = holdings.find(x => x.ticker === e.ticker)
             const price = h?.current_price ?? 0
             const value = e.shares != null ? e.shares * price : null
-            const impactColor = e.impact === 'HIGH' ? 'text-red-400 border-red-800/50' : e.impact === 'MED' ? 'text-amber-400 border-amber-800/40' : 'text-zinc-400 border-zinc-800'
             return (
-              <div key={e.ticker} className="p-4 hover:bg-zinc-800/30 transition-colors">
+              <div key={e.ticker} className={cn('p-4 hover:bg-zinc-800/30 transition-colors', e.reported ? 'opacity-50' : '')}>
                 <div className="flex items-center gap-2 mb-1">
                   <span className={cn('text-base font-bold', e.impact === 'HIGH' ? 'text-red-400' : e.impact === 'MED' ? 'text-amber-300' : 'text-zinc-300')}>{e.ticker}</span>
-                  {e.impact === 'HIGH' && <span className="text-[10px] px-1.5 py-0.5 bg-red-400/20 text-red-400 rounded font-bold">HIGH IMPACT</span>}
+                  {e.reported && <span className="text-[10px] px-1.5 py-0.5 bg-zinc-700 text-zinc-400 rounded font-bold">DONE</span>}
+                  {!e.reported && e.impact === 'HIGH' && <span className="text-[10px] px-1.5 py-0.5 bg-red-400/20 text-red-400 rounded font-bold">HIGH</span>}
                 </div>
                 <p className="text-xs text-zinc-500 mb-0.5">{e.date} • {e.timing}</p>
                 {e.shares != null ? (
@@ -201,7 +203,7 @@ export default function DashboardPage() {
                 ) : (
                   <p className="text-xs text-zinc-500 italic">Via portfolio</p>
                 )}
-                <p className="text-xs text-blue-400 mt-1.5 font-medium">{e.action}</p>
+                <p className={cn('text-xs mt-1.5 font-medium', e.reported ? 'text-zinc-500' : 'text-blue-400')}>{e.action}</p>
               </div>
             )
           })}
@@ -417,6 +419,9 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
+
+      {/* Portfolio news feed */}
+      <NewsCard newsItems={newsItems} loading={newsLoading} />
 
       {/* Quick stats row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
