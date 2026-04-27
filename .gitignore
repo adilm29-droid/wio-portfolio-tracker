@@ -36,3 +36,4 @@ yarn-error.log*
 next-env.d.ts
 
 .vercel
+MASTER_PROMPT_V6.md

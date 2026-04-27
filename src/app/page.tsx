@@ -136,22 +136,22 @@ export default function DashboardPage() {
     )
   }
 
-  // Earnings week Apr 20-25 — UNH + TSLA already reported
+  // Earnings week Apr 21–May 2 — UNH + TSLA already reported
   const earningsWeek = [
-    { ticker: 'UNH',  date: 'Mon Apr 20', timing: 'BMO', shares: 4.94,  action: 'Reported', impact: 'HIGH' as const, reported: true },
-    { ticker: 'TSLA', date: 'Tue Apr 21', timing: 'AMC', shares: 3.21,  action: 'Reported', impact: 'MED'  as const, reported: true },
-    { ticker: 'MSFT', date: 'Wed Apr 23', timing: 'AMC', shares: 1.45,  action: 'HOLD through earnings', impact: 'MED' as const, reported: false },
-    { ticker: 'GOOGL',date: 'Wed Apr 23', timing: 'AMC', shares: null,  action: 'Held via FATMAA portfolio', impact: 'MED' as const, reported: false },
-    { ticker: 'META', date: 'Thu Apr 24', timing: 'AMC', shares: 0.55,  action: 'HOLD through earnings', impact: 'LOW' as const, reported: false },
-    { ticker: 'AMZN', date: 'Fri Apr 25', timing: 'AMC', shares: 7.35,  action: 'HOLD through earnings', impact: 'MED' as const, reported: false },
+    { ticker: 'UNH',  date: 'Mon Apr 21', timing: 'BMO', shares: 4.94,  action: 'Reported — beat, raised guide', impact: 'HIGH' as const, reported: true },
+    { ticker: 'TSLA', date: 'Tue Apr 22', timing: 'AMC', shares: 3.21,  action: 'Reported — EPS beat, rev miss', impact: 'MED'  as const, reported: true },
+    { ticker: 'MSFT', date: 'Tue Apr 29', timing: 'AMC', shares: 1.45,  action: 'HOLD through earnings', impact: 'MED' as const, reported: false },
+    { ticker: 'GOOGL',date: 'Tue Apr 29', timing: 'AMC', shares: null,  action: 'Held via FATMAA portfolio', impact: 'MED' as const, reported: false },
+    { ticker: 'META', date: 'Tue Apr 29', timing: 'AMC', shares: 0.55,  action: 'HOLD through earnings', impact: 'HIGH' as const, reported: false },
+    { ticker: 'AMZN', date: 'Tue Apr 29', timing: 'AMC', shares: 7.35,  action: 'HOLD through earnings', impact: 'MED' as const, reported: false },
   ]
 
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Cash buffer warning banner — dismissible, session only */}
-      {!cashBannerDismissed && cashVal < 1000 && (
+      {!cashBannerDismissed && cashVal < 1500 && (
         <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/40 text-red-300">
-          <span className="text-sm font-medium">⚠️ No cash buffer ({fmtCurrency(cashVal)}) — park $1,500 on next salary as dry powder</span>
+          <span className="text-sm font-medium">⚠️ Cash buffer {fmtCurrency(cashVal)} — target $1,500. Gap: {fmtCurrency(Math.max(0, 1500 - cashVal))}. Fill on next salary before any new buys.</span>
           <button onClick={() => setCashBannerDismissed(true)} className="shrink-0 text-red-400 hover:text-red-200 text-lg leading-none">✕</button>
         </div>
       )}
@@ -169,7 +169,7 @@ export default function DashboardPage() {
       {/* Earnings week live banner */}
       <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-sm font-medium">
         <span>⏸</span>
-        <span>Earnings week live — MSFT &amp; GOOGL (Apr 23), META (Apr 24), AMZN (Apr 25) — no new trades until Mon Apr 28</span>
+        <span>Earnings week — MSFT, GOOGL, META &amp; AMZN all report Tue Apr 29 AMC — no new trades until results drop</span>
       </div>
 
       {/* TODAY'S ACTION card — powered by StocksBrain */}
@@ -180,7 +180,7 @@ export default function DashboardPage() {
         <div className="px-5 py-4 border-b border-zinc-800 flex items-center gap-2">
           <Calendar size={18} className="text-amber-400" />
           <h2 className="text-lg font-bold text-white">Pre-Earnings Briefing</h2>
-          <span className="text-xs text-zinc-500">Week of Apr 20–25, 2026</span>
+          <span className="text-xs text-zinc-500">Week of Apr 21–May 2, 2026</span>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 divide-x divide-y divide-zinc-800/60">
           {earningsWeek.map(e => {
@@ -217,6 +217,7 @@ export default function DashboardPage() {
           <p className="text-xs text-zinc-500 font-medium uppercase tracking-wide">Total Portfolio</p>
           <p className="text-3xl font-bold text-white mt-1">{fmtCurrency(totalValue)}</p>
           <p className="text-xs text-zinc-500 mt-1">Direct: {fmtCurrency(directTotal)} + Wealth: {fmtCurrency(wealthTotal)}</p>
+          <p className="text-xs text-zinc-500">≈ AED {(totalValue * 3.6725).toLocaleString('en-US', { maximumFractionDigits: 0 })}</p>
         </div>
 
         {/* P/L */}
@@ -231,6 +232,7 @@ export default function DashboardPage() {
             <>
               <p className={cn('text-2xl font-bold mt-1', getPlColor(totalPL))}>{totalPL >= 0 ? '+' : ''}{fmtCurrency(totalPL)}</p>
               <span className={cn('text-xs px-2 py-0.5 rounded mt-1 inline-block', getPlBgColor(totalPLPct))}>{fmtPercent(totalPLPct)}</span>
+              <p className="text-xs text-zinc-500 mt-1">≈ AED {Math.abs(totalPL * 3.6725).toLocaleString('en-US', { maximumFractionDigits: 0 })}</p>
             </>
           )}
         </div>
@@ -437,6 +439,14 @@ export default function DashboardPage() {
             <p className="text-xs text-zinc-500 mt-0.5">{s.sub}</p>
           </div>
         ))}
+      </div>
+
+      {/* V6 Reality Check Footer */}
+      <div className="px-4 py-3 rounded-xl bg-zinc-900/50 border border-zinc-800 text-center">
+        <p className="text-xs text-zinc-600">
+          This system uses 14 data inputs + 9 institutional frameworks. No single one beats the market. Together they tilt odds 5-10% over the long run — that&apos;s the real edge. Anyone promising more is selling something.
+        </p>
+        <p className="text-xs text-zinc-700 mt-1">1 USD = 3.6725 AED (UAE Central Bank fixed peg)</p>
       </div>
     </div>
   )

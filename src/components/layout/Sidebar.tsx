@@ -6,7 +6,7 @@ import { useState } from 'react'
 import {
   LayoutDashboard, Briefcase, PieChart, Bitcoin, BarChart3,
   BookOpen, TrendingUp, Shield, Calendar, Newspaper, Settings,
-  RefreshCw, Menu, X, ChevronRight
+  RefreshCw, Menu, X, ChevronRight, Brain, Rocket, GitBranch, ClipboardList, FileText
 } from 'lucide-react'
 import { cn, fmtCurrency } from '@/lib/utils'
 
@@ -22,6 +22,11 @@ const navItems = [
   { href: '/earnings', label: 'Earnings', icon: Calendar },
   { href: '/market', label: 'Market & News', icon: Newspaper },
   { href: '/settings', label: 'Settings', icon: Settings },
+  { href: '/intelligence', label: 'Intelligence', icon: Brain },
+  { href: '/moonshots', label: 'Moonshots', icon: Rocket },
+  { href: '/frameworks', label: 'Frameworks', icon: GitBranch },
+  { href: '/decisions', label: 'Decisions', icon: ClipboardList },
+  { href: '/briefing', label: 'Briefing', icon: FileText },
 ]
 
 interface SidebarProps {

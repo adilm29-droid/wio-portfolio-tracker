@@ -15,7 +15,7 @@ const AED_TO_USD = 1 / 3.6725
 // All prices in USD. Crypto avg_cost converted from AED.
 const HOLDINGS_UPDATE = [
   // Stocks
-  { ticker: 'AMD',  shares: 4.32560237,    avg_cost_per_share: 174.16,  current_price: 284.45 },
+  { ticker: 'AMD',  shares: 3.32560237,    avg_cost_per_share: 174.16,  current_price: 284.45 },
   { ticker: 'AMZN', shares: 7.35181268,    avg_cost_per_share: 224.15,  current_price: 249.90 },
   { ticker: 'KO',   shares: 1.41585302,    avg_cost_per_share: 70.63,   current_price: 74.70 },
   { ticker: 'META', shares: 0.55467511,    avg_cost_per_share: 631.00,  current_price: 668.85 },
@@ -45,7 +45,7 @@ const HOLDINGS_UPDATE = [
 ]
 
 const WEALTH_PORTFOLIOS_UPDATE = [
-  { name: 'Cybersecurity',    total_value: 5397.87, total_cost: 5800 },
+  { name: 'Cybersecurity & Digital Protection',    total_value: 5397.87, total_cost: 5800 },
   { name: 'Architects of AI', total_value: 6012.93, total_cost: 5800 },
   { name: 'FATMAA',           total_value: 5956.48, total_cost: 5800 },
   { name: 'Dividend Stocks',  total_value: 6193.79, total_cost: 5800 },
@@ -71,6 +71,41 @@ async function main() {
   console.log(`Found ${currentHoldings.length} active holdings\n`)
 
   const tickerToId = Object.fromEntries(currentHoldings.map(h => [h.ticker, h.id]))
+
+  // Upsert CASH holding (AMD trim proceeds: ~$348 as of Apr 28, 2026)
+  const CASH_BALANCE_USD = 348.00
+  const cashId = tickerToId['CASH']
+  if (cashId) {
+    const { error: cashErr } = await supabase
+      .from('holdings')
+      .update({ shares: CASH_BALANCE_USD, avg_cost_per_share: 1.00, current_price: 1.00, price_updated_at: now, updated_at: now })
+      .eq('id', cashId)
+    if (cashErr) console.error('  ✗ CASH:', cashErr.message)
+    else console.log(`  ✓ CASH — $${CASH_BALANCE_USD.toFixed(2)}`)
+  } else {
+    // INSERT the CASH holding — it doesn't exist yet
+    console.log('  Creating CASH holding in DB...')
+    const { error: cashInsertErr } = await supabase
+      .from('holdings')
+      .insert({
+        ticker: 'CASH',
+        name: 'Cash (AED/USD)',
+        asset_class: 'US_STOCK',
+        bucket: 'CASH',
+        shares: CASH_BALANCE_USD,
+        avg_cost_per_share: 1.00,
+        current_price: 1.00,
+        sector: null,
+        thesis: 'Cash buffer — dry powder for opportunities',
+        is_active: true,
+        currency: 'USD',
+        price_updated_at: now,
+        updated_at: now,
+        created_at: now,
+      })
+    if (cashInsertErr) console.error('  ✗ CASH insert:', cashInsertErr.message)
+    else console.log(`  ✓ CASH created — $${CASH_BALANCE_USD.toFixed(2)}`)
+  }
 
   for (const h of HOLDINGS_UPDATE) {
     const id = tickerToId[h.ticker]
