@@ -2,13 +2,15 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   LayoutDashboard, Briefcase, PieChart, Bitcoin, BarChart3,
   BookOpen, TrendingUp, Shield, Calendar, Newspaper, Settings,
-  RefreshCw, Menu, X, ChevronRight, Brain, Rocket, GitBranch, ClipboardList, FileText
+  RefreshCw, Menu, X, ChevronRight, Brain, Rocket, GitBranch, ClipboardList, FileText,
+  BarChart2, Zap
 } from 'lucide-react'
 import { cn, fmtCurrency } from '@/lib/utils'
+import { fetchSBDashboard, getSBStatus, type SBStatusLevel } from '@/lib/stocksbrain-fetch'
 
 const navItems = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard },
@@ -18,6 +20,8 @@ const navItems = [
   { href: '/commodities', label: 'Commodities', icon: BarChart3 },
   { href: '/journal', label: 'Trade Journal', icon: BookOpen },
   { href: '/analysis', label: 'Analysis', icon: TrendingUp },
+  { href: '/recommendations', label: 'Recommendations', icon: Zap },
+  { href: '/backtest', label: 'Backtest', icon: BarChart2 },
   { href: '/rules', label: 'Rules Engine', icon: Shield },
   { href: '/earnings', label: 'Earnings', icon: Calendar },
   { href: '/market', label: 'Market & News', icon: Newspaper },
@@ -28,6 +32,51 @@ const navItems = [
   { href: '/decisions', label: 'Decisions', icon: ClipboardList },
   { href: '/briefing', label: 'Briefing', icon: FileText },
 ]
+
+const STATUS_DOT: Record<SBStatusLevel, string> = {
+  green: 'bg-green-500',
+  amber: 'bg-amber-400',
+  red: 'bg-red-500',
+  unknown: 'bg-zinc-600',
+}
+
+function SBStatusDot({ collapsed }: { collapsed: boolean }) {
+  const [generatedAt, setGeneratedAt] = useState<string | null>(null)
+
+  useEffect(() => {
+    fetchSBDashboard().then(d => {
+      if (d) setGeneratedAt(d.generated_at)
+    })
+  }, [])
+
+  const status = getSBStatus(generatedAt)
+  const dotClass = STATUS_DOT[status.level]
+  const tooltip = generatedAt
+    ? `StocksBrain: ${status.label} — last run ${status.ageHours?.toFixed(1)}h ago\n${generatedAt}`
+    : 'StocksBrain: status unknown'
+
+  return (
+    <div
+      title={tooltip}
+      className={cn('flex items-center gap-2', collapsed ? 'justify-center' : 'px-3 py-2')}
+    >
+      <span className={cn('w-2 h-2 rounded-full shrink-0 animate-pulse', dotClass)} />
+      {!collapsed && (
+        <span className="text-xs text-zinc-500">
+          Brain: <span className={cn(
+            status.level === 'green' ? 'text-green-400'
+            : status.level === 'amber' ? 'text-amber-400'
+            : status.level === 'red' ? 'text-red-400'
+            : 'text-zinc-500'
+          )}>{status.label}</span>
+          {status.ageHours !== null && (
+            <span className="text-zinc-600"> ({status.ageHours.toFixed(0)}h ago)</span>
+          )}
+        </span>
+      )}
+    </div>
+  )
+}
 
 interface SidebarProps {
   totalValue?: number
@@ -94,6 +143,11 @@ export function Sidebar({ totalValue, lastRefresh, onRefresh, isRefreshing }: Si
           })}
         </ul>
       </nav>
+
+      {/* StocksBrain status */}
+      <div className="border-t border-zinc-800 py-2">
+        <SBStatusDot collapsed={collapsed} />
+      </div>
 
       {/* Refresh */}
       <div className="p-3 border-t border-zinc-800">
