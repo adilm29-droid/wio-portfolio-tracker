@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { computeHoldingMetrics, fmtCurrency, fmtPercent, fmt, getPlColor, getPlBgColor, getActionSignalColor, getBucketColor, cn, getVixRisk } from '@/lib/utils'
 import { evaluateRules, computeBucketAllocations } from '@/lib/rules-engine'
+import { checkPortfolioIntegrity } from '@/lib/integrity-check'
 import type { Holding, WealthPortfolio, WealthPortfolioHolding, BucketTarget, EarningsCalendar, Alert, BucketAllocation, HoldingWithMetrics } from '@/lib/types'
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts'
 import { TrendingUp, TrendingDown, AlertTriangle, CheckCircle, RefreshCw, Calendar, Newspaper, DollarSign, Activity, Shield, Zap } from 'lucide-react'
@@ -106,6 +107,7 @@ export default function DashboardPage() {
   const withMetrics = holdings.map(h => computeHoldingMetrics(h, totalValue))
   const bucketAllocs = computeBucketAllocations(holdings, wps, bucketTargets)
   const alerts = evaluateRules(holdings, wps, bucketTargets)
+  const integrityCheck = checkPortfolioIntegrity(holdings, totalValue, totalPL, cashVal)
 
   // Sector data for donut
   const sectorMap: Record<string, number> = {}
@@ -148,6 +150,18 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6 animate-fade-in">
+      {/* Data integrity error banner */}
+      {!integrityCheck.ok && (
+        <div className="bg-red-950 border border-red-500 p-6 rounded-xl mb-4">
+          <h2 className="text-red-400 font-bold text-xl mb-2">⚠️ Data Integrity Error</h2>
+          <p className="text-zinc-300 mb-3">Dashboard values may be incorrect — issues detected:</p>
+          <ul className="list-disc list-inside text-zinc-400 space-y-1">
+            {integrityCheck.errors.map((e, i) => <li key={i}>{e}</li>)}
+          </ul>
+          <p className="text-zinc-500 text-sm mt-3">Run <code>node scripts/audit-holdings.mjs</code> to debug.</p>
+        </div>
+      )}
+
       {/* Cash buffer warning banner — dismissible, session only */}
       {!cashBannerDismissed && cashVal < 1500 && (
         <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/40 text-red-300">

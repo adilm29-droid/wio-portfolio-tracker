@@ -7,13 +7,14 @@ import {
   LayoutDashboard, Briefcase, PieChart, Bitcoin, BarChart3,
   BookOpen, TrendingUp, Shield, Calendar, Newspaper, Settings,
   RefreshCw, Menu, X, ChevronRight, Brain, Rocket, GitBranch, ClipboardList, FileText,
-  BarChart2, Zap
+  BarChart2, Zap, Target
 } from 'lucide-react'
 import { cn, fmtCurrency } from '@/lib/utils'
 import { fetchSBDashboard, getSBStatus, type SBStatusLevel } from '@/lib/stocksbrain-fetch'
 
 const navItems = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/today', label: "Today's Verdict", icon: Target },
   { href: '/holdings', label: 'Holdings', icon: Briefcase },
   { href: '/wealth-portfolios', label: 'Wealth Portfolios', icon: PieChart },
   { href: '/crypto', label: 'Crypto', icon: Bitcoin },

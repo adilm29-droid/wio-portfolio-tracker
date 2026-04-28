@@ -51,7 +51,16 @@ export interface SBDashboard {
   macro: {
     vix: number
     sp500_trend: string
+    sp500_5d_return?: number
+    dxy?: number
+    ten_year_yield?: number
+    gold_price?: number
+    oil_price?: number
+    risk_regime?: string
+    risk_status?: string
     sector_rotation_signal: Record<string, string>
+    leading_sectors?: string[]
+    lagging_sectors?: string[]
   }
   macro_pulse?: {
     overall_geopolitical_tone: number

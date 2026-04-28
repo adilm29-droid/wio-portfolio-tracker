@@ -69,7 +69,7 @@ export default function RecommendationsPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold">Recommendations</h1>
-            <p className="text-zinc-400 text-sm">Today's BUY/HOLD/TRIM signals from StocksBrain</p>
+            <p className="text-zinc-400 text-sm">Today&apos;s BUY/HOLD/TRIM signals from StocksBrain</p>
           </div>
           <button onClick={load} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-zinc-800 text-zinc-300 text-sm hover:bg-zinc-700">
             <RefreshCw size={14} /> Refresh
