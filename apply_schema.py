@@ -1,5 +1,6 @@
 import urllib.request
 import json
+import os
 
 sql = open('schema.sql', 'r').read()
 
@@ -86,7 +87,7 @@ req = urllib.request.Request(
     'https://api.supabase.com/v1/projects/vgakkzbglulhxlbjmosb/database/query',
     data=data,
     headers={
-        'Authorization': 'Bearer sbp_ddf833bebfe037fb6f2e1d77a124a5de0106bdf1',
+        'Authorization': f'Bearer {os.environ.get("SUPABASE_ACCESS_TOKEN", "")}',
         'Content-Type': 'application/json'
     }
 )

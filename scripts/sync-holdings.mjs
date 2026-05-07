@@ -5,8 +5,8 @@
 import { createClient } from '@supabase/supabase-js'
 
 const supabase = createClient(
-  'https://vgakkzbglulhxlbjmosb.supabase.co',
-  'sb_publishable_1998wG_WKuZlCxcF17ablg_9bk6slEm'
+  process.env.SUPABASE_URL || 'https://vgakkzbglulhxlbjmosb.supabase.co',
+  process.env.SUPABASE_ANON_KEY
 )
 
 // AED → USD conversion rate (Apr 2026)

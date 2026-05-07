@@ -37,3 +37,14 @@ next-env.d.ts
 
 .vercel
 MASTER_PROMPT_V6.md
+
+# secrets hardening
+.env
+.env.local
+.env.*.local
+*.env
+secrets.json
+secrets.env
+__pycache__/
+*.pyc
+.pytest_cache/
