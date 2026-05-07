@@ -13,6 +13,7 @@ import { fetchSBDashboard, fetchSBNews } from '@/lib/stocksbrain-fetch'
 import type { SBDashboard, SBNewsItem } from '@/lib/stocksbrain-fetch'
 import { TodaysActionCard } from '@/components/TodaysActionCard'
 import { NewsCard } from '@/components/NewsCard'
+import { WealthPortfolioCard } from '@/components/WealthPortfolioCard'
 
 const SECTOR_COLORS: Record<string, string> = {
   Technology: '#3b82f6', 'Consumer Discretionary': '#f59e0b', Healthcare: '#22c55e',
@@ -438,6 +439,9 @@ export default function DashboardPage() {
 
       {/* Portfolio news feed */}
       <NewsCard newsItems={newsItems} loading={newsLoading} />
+
+      {/* Wealth Portfolios summary */}
+      <WealthPortfolioCard portfolios={wps} totalPortfolioValue={totalValue} />
 
       {/* Quick stats row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
