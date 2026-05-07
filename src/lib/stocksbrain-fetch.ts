@@ -17,6 +17,29 @@ export interface SBHolding {
   current_price: number | null
 }
 
+export interface SBRecommendation {
+  ticker: string
+  action: string
+  score: number
+  confidence: 'HIGH' | 'MEDIUM' | 'LOW' | 'NEGATIVE'
+  position_size_pct: number
+  reasoning: string
+  halal_ok: boolean
+  halal_status: string
+  kelly_capped: number | null
+  vol_percentile: number | null
+  sharpe: number | null
+  government_tailwind: boolean
+}
+
+export interface SBBacktestSummary {
+  hit_rate: number | null
+  hit_rate_pct: number | null
+  vs_spus: number | null
+  max_drawdown: number | null
+  generated_at: string | null
+}
+
 export interface SBDashboard {
   generated_at: string
   portfolio_metrics: {
@@ -28,11 +51,49 @@ export interface SBDashboard {
   macro: {
     vix: number
     sp500_trend: string
+    sp500_5d_return?: number
+    dxy?: number
+    ten_year_yield?: number
+    gold_price?: number
+    oil_price?: number
+    risk_regime?: string
+    risk_status?: string
     sector_rotation_signal: Record<string, string>
+    leading_sectors?: string[]
+    lagging_sectors?: string[]
+  }
+  macro_pulse?: {
+    overall_geopolitical_tone: number
+    yield_curve_10_2: number | null
+    fred: Record<string, number>
+    risk_flags: string[]
   }
   holdings: SBHolding[]
+  recommendations?: SBRecommendation[]
   risk_flags: { flag: string; severity: string; detail: string }[]
   summary: { buy_count: number; hold_count: number; trim_count: number; sell_count: number }
+  backtest_summary?: SBBacktestSummary
+  insider_clusters?: { ticker: string; insider_count: number; total_value: number; description: string }[]
+}
+
+export type SBStatusLevel = 'green' | 'amber' | 'red' | 'unknown'
+
+export function getSBStatus(generatedAt: string | undefined | null): {
+  level: SBStatusLevel
+  label: string
+  ageHours: number | null
+} {
+  if (!generatedAt) return { level: 'unknown', label: 'Unknown', ageHours: null }
+  try {
+    const ts = new Date(generatedAt)
+    const ageMs = Date.now() - ts.getTime()
+    const ageHours = ageMs / 3_600_000
+    if (ageHours < 36) return { level: 'green', label: 'Live', ageHours }
+    if (ageHours < 72) return { level: 'amber', label: 'Stale', ageHours }
+    return { level: 'red', label: 'Down', ageHours }
+  } catch {
+    return { level: 'unknown', label: 'Unknown', ageHours: null }
+  }
 }
 
 export interface SBNewsItem {

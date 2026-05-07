@@ -60,6 +60,7 @@ export async function POST() {
       .from('holdings')
       .select('id, ticker, asset_class')
       .eq('is_active', true)
+      .neq('ticker', 'CASH')
 
     if (!holdings?.length) return NextResponse.json({ message: 'No holdings', updated: 0 })
 

@@ -1,8 +1,9 @@
 import urllib.request
 import json
+import os
 
 BASE_URL = "https://vgakkzbglulhxlbjmosb.supabase.co/rest/v1"
-ANON_KEY = "sb_publishable_1998wG_WKuZlCxcF17ablg_9bk6slEm"
+ANON_KEY = os.environ.get("SUPABASE_ANON_KEY", "")
 
 HEADERS = {
     "apikey": ANON_KEY,
